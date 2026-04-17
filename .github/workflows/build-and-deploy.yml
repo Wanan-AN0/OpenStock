@@ -51,11 +51,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Notify local server to pull
-        if: ${{ secrets.DEPLOY_WEBHOOK_URL != '' }}
+      - name: Notify local server to pull (optional webhook)
+        env:
+          DEPLOY_WEBHOOK_URL: ${{ vars.DEPLOY_WEBHOOK_URL }}
+        if: vars.DEPLOY_WEBHOOK_URL != ''
         run: |
           echo "Triggering deployment on local server..."
-          curl -X POST "${{ secrets.DEPLOY_WEBHOOK_URL }}" \
+          curl -X POST "${{ vars.DEPLOY_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
-            -d '{"image":"${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}","tag":"{{ steps.meta.outputs.tags }}","branch":"${{ github.ref_name }}","commit":"${{ github.sha }}"}' \
+            -d '{"image":"${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}","tag":"latest","branch":"${{ github.ref_name }}","commit":"${{ github.sha }}"}' \
             --max-time 30 || echo "Webhook call failed (local server may be unreachable)"
