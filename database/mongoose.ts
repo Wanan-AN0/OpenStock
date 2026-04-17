@@ -49,7 +49,9 @@ export const connectToDatabase = async () => {
     }
     catch (err) {
         cached.promise = null;
-        throw err;
+        // During `next build`, MongoDB is not available — return null instead of crashing
+        console.warn(`[mongoose] Connection failed (build-time?): ${(err as Error).message}`);
+        return null as unknown as typeof mongoose;
     }
 
     console.log(`MongoDB Connected ${MONGODB_URI} in ${process.env.NODE_ENV}`);
