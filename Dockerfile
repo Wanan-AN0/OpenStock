@@ -1,24 +1,22 @@
-# Use official Node.js 20 Alpine image as base
+# ── Builder stage ────────────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files first (layer cache)
-COPY package*.json ./
+# Build args — provide dummy values so Next.js SSR pre-render doesn't crash
+ARG NEXT_PUBLIC_FINNHUB_API_KEY=demo
+ARG BUILD_MONGODB_URI=mongodb://localhost:27017/buildcheck
+ENV NEXT_PUBLIC_FINNHUB_API_KEY=${NEXT_PUBLIC_FINNHUB_API_KEY}
+ENV MONGODB_URI=${BUILD_MONGODB_URI}
 
-# Install dependencies
+# Install deps (use package-lock.json hash for layer cache)
+COPY package*.json ./
 RUN npm ci --legacy-peer-deps
 
-# Copy source files
+# Copy source
 COPY . .
 
-# ── Build args (injected by GitHub Actions or docker build --build-arg) ───────
-ARG NEXT_PUBLIC_FINNHUB_API_KEY
-ARG NEXT_PUBLIC_BASE_PATH=""
-ENV NEXT_PUBLIC_FINNHUB_API_KEY=${NEXT_PUBLIC_FINNHUB_API_KEY}
-ENV NEXT_PUBLIC_BASE_PATH=${NEXT_PUBLIC_BASE_PATH}
-
-# Build the Next.js application
+# Build
 RUN npm run build
 
 # ── Production image ──────────────────────────────────────────────────────────
@@ -28,17 +26,18 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init curl
 
-# Copy built artifacts from builder
+# Only copy built artifacts + runtime deps
 COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static .next/static
+COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/package.json ./
 
-# Expose the port Next.js runs on
+# Runtime env vars come from docker-compose — no defaults needed
+# MONGODB_URI, BETTER_AUTH_SECRET, NEXT_PUBLIC_FINNHUB_API_KEY, etc.
+
 EXPOSE 3000
 
-# Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "server.js"]

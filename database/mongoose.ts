@@ -30,6 +30,11 @@ if (!cached) {
 
 export const connectToDatabase = async () => {
     if (!MONGODB_URI) {
+        // During `next build` pre-render, skip connection
+        if (process.env.NODE_ENV === "production") {
+            console.warn("MongoDB: MONGODB_URI not set — skipping connection (build-time?)");
+            return null as unknown as typeof mongoose;
+        }
         throw new Error("MongoDB URI is missing");
     }
 
