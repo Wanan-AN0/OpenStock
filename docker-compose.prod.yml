@@ -1,22 +1,15 @@
+# Production: pull pre-built image from GHCR
+# Start with: docker compose -f docker-compose.prod.yml up -d
 services:
   openstock:
-    build:
-      context: .
-      platforms:
-        - linux/amd64
-        - linux/arm64
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_FINNHUB_API_KEY: ${NEXT_PUBLIC_FINNHUB_API_KEY:-demo}
-      extra_hosts:
-        - "mongodb:host-gateway"
+    image: ghcr.io/wanan-an0/openstock:latest
     ports:
-      - "3000:3000"
+      - "3001:3000"
     env_file:
       - .env
     restart: unless-stopped
-    depends_on:
-      - mongodb
+    environment:
+      - NEXT_PUBLIC_BASE_PATH=
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000 || exit 1"]
       interval: 30s
