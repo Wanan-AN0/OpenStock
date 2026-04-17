@@ -8,7 +8,6 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository_owner }}/openstock
-  NODE_VERSION: "20"
 
 jobs:
   build-and-push:
@@ -48,6 +47,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            NEXT_PUBLIC_FINNHUB_API_KEY=${{ vars.NEXT_PUBLIC_FINNHUB_API_KEY || 'demo' }}
+            NEXT_PUBLIC_BASE_PATH=
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
